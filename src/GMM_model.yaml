@@ -1,11 +1,12 @@
 version: "0.1"
 
+max_fpr: 0.1
 
 fit:
   n_init: 10
   cov_type: "full"
   nb_comp: 1
 
-embeddings_location: '../intermediate_data/dev_data_embeddings/'
-
 machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
+
+verbose: True

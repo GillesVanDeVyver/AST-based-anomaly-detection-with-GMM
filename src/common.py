@@ -1,5 +1,6 @@
 import torch
 import torchaudio
+import matplotlib.pyplot as plt
 
 
 
@@ -17,3 +18,18 @@ def convert_to_log_mel(path_to_file, num_mel_bins=128, target_length=1024):
     elif p < 0:
         fbank = fbank[0:target_length, :]
     return fbank
+
+def generate_ROC_curve(FPR,TRP,output_location):
+    x_axis=[0]
+    y_axis=[0]
+    for i in range(len(FPR)):
+        x_axis.append(FPR[i])
+        y_axis.append(TRP[i])
+    x_axis.append(1)
+    y_axis.append(1)
+    plt.plot(x_axis,y_axis)
+    plt.plot([0,1],[0,1])
+    plt.xlabel("False positive rate")
+    plt.ylabel("True positive rate")
+    plt.savefig(output_location)
+    plt.close()

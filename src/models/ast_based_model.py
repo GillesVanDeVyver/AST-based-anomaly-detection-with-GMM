@@ -118,7 +118,9 @@ class ASTModel(nn.Module):
             #device=torch.device("cuda")
             print(os. getcwd())
             if os.path.exists('../pretrained_models/audioset_10_10_0.4593.pth') == False:
-                print("pretrained model exists")
+                print("pretrained model does not exist, downloading")
+                if not os.path.exists('../pretrained_models/'):
+                    os.makedirs('../pretrained_models/')
                 # this model performs 0.4593 mAP on the audioset eval set
                 audioset_mdl_url = 'https://www.dropbox.com/s/cv4knew8mvbrnvq/audioset_0.4593.pth?dl=1'
                 wget.download(audioset_mdl_url, out='../pretrained_models/audioset_10_10_0.4593.pth')
@@ -183,23 +185,7 @@ class ASTModel(nn.Module):
 
         x = self.v.norm(x)
         x = x[:,2:] #drop class and distillation token
-        #x = (x[:, 0] + x[:, 1]) / 2
+        x = (x[:, 0] + x[:, 1]) / 2
         #x = self.mlp_head(x)
         return x
 
-if __name__ == '__main__':
-    input_tdim = 100
-    ast_mdl = ASTModel_full(input_tdim=input_tdim)
-    # input a batch of 10 spectrogram, each with 100 time frames and 128 frequency bins
-    test_input = torch.rand([10, input_tdim, 128])
-    test_output = ast_mdl(test_input)
-    # output should be in shape [10, 527], i.e., 10 samples, each with prediction of 527 classes.
-    print(test_output.shape)
-
-    input_tdim = 256
-    ast_mdl = ASTModel_full(input_tdim=input_tdim,label_dim=50, audioset_pretrain=True)
-    # input a batch of 10 spectrogram, each with 512 time frames and 128 frequency bins
-    test_input = torch.rand([10, input_tdim, 128])
-    test_output = ast_mdl(test_input)
-    # output should be in shape [10, 50], i.e., 10 samples, each with prediction of 50 classes.
-    print(test_output.shape)

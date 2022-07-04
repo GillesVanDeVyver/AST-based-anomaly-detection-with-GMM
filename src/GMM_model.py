@@ -6,7 +6,9 @@ import common
 from sklearn import metrics
 from pathlib import Path
 from sklearn import mixture
-
+import AST_embedder
+from tqdm import tqdm
+import numpy as np
 
 def evaluate(labels,X,domain,generate_ROC_curve=True):
     prediction = -model.score_samples(X) # higher value means more 'normal' => - for anomaly score
@@ -21,34 +23,46 @@ def evaluate(labels,X,domain,generate_ROC_curve=True):
 
 with open("GMM_model.yaml") as stream:
     param = yaml.safe_load(stream)
-result_dir="../results/AST_GMM/"+str(param["version"])+"/"
-Path(result_dir).mkdir(parents=True, exist_ok=True)
-f_results = open(result_dir+'/accuracies.txt')
 
-f_results.write("hyperparameters:\n" +
-                "nb_comp: " + str(param["nb_comp"])+", n_init: "+ str(param["fit"]["n_init"])+\
+with open("AST_embedder.yaml") as stream:
+    param_ast_embeddings = yaml.safe_load(stream)
+
+verbose= param['verbose']
+
+result_dir="../results/AST_v"+str(param_ast_embeddings["version"])+"-GMM_v"+str(param["version"])+"/"
+if not os.path.exists(result_dir):
+    os.makedirs(result_dir)
+f_results = open(result_dir+'accuracies.txt',"w")
+f_parameters = open(result_dir+'hyperparameters.txt',"w")
+f_parameters.write("hyperparameters:\n" +
+                "nb_comp: " + str(param["fit"]["nb_comp"])+", n_init: "+ str(param["fit"]["n_init"])+\
                 ", covariance_type: "+ param["fit"]["cov_type"])
-embedding_base_directory=param['embeddings_location']
-for machine in param['machine_types']:
-    machine_dir = embedding_base_directory + machine
-    train_pickle_location = machine_dir + "/train/" + "dataframe.pkl"
+f_parameters.close()
+embedding_base_directory=param_ast_embeddings['embeddings_base_location']+"_v"+param_ast_embeddings["version"]+"/"
+dataframes_base_directory = param_ast_embeddings['dataframes_base_location'] + "_v" + param_ast_embeddings['version'] + "/"
 
+for machine in tqdm(param['machine_types']):
+    if verbose:
+        print("Starting training GMM model for "+machine)
+    #machine_dir = embedding_base_directory + machine
+    X_train = pd.read_pickle(dataframes_base_directory+machine+"/train.pkl")
+    lables_train=np.load(dataframes_base_directory+machine+"/train_labels.npy")
     # training
-    lables_train, X_train= 'temp' #TODO
-    X_train = pd.read_pickle(train_pickle_location)
-    model = mixture.GaussianMixture(n_components= param["nb_comp"],n_init=param["fit"]["n_init"],
+    model = mixture.GaussianMixture(n_components= param["fit"]["nb_comp"],n_init=param["fit"]["n_init"],
                                     covariance_type=param["fit"]["cov_type"])
     model.fit(X_train)
 
     #evaluation
-    labels_source_test, X_source_test = 'temp' #TODO
+    X_source_test = pd.read_pickle(dataframes_base_directory+machine+"/source_test.pkl")
+    labels_source_test=np.load(dataframes_base_directory+machine+"/source_test_labels.npy")
     auc_source,pauc_source = evaluate(labels_source_test, X_source_test, 'source')
 
-    labels_target_test, X_target_test = 'temp' #TODO
+    X_target_test = pd.read_pickle(dataframes_base_directory+machine+"/target_test.pkl")
+    labels_target_test=np.load(dataframes_base_directory+machine+"/target_test_labels.npy")
     auc_target,pauc_target = evaluate(labels_target_test, X_target_test, 'target')
 
     f_results.write(str(machine) + ":\n"+
             "AUC source test="  + str(auc_source) + ", pAUC source test=" + str(pauc_source) + "\n"+
             "AUC target test=" + str(auc_target) + ", pAUC target test=" + str(pauc_target) +  "\n")
 
-
+f_results.close()
