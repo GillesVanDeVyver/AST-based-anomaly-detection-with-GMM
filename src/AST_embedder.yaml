@@ -1,0 +1,20 @@
+version: "0.1"
+
+
+embeddings_base_location: '../intermediate_data/dev_data_embeddings'
+dataframes_base_location: '../intermediate_data/dev_data_embedding_dataframes'
+
+dev_data_location: '../../data/dev_data/'
+machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
+
+ast_model:
+  nb_layers: 12
+  input_tdim: 1024
+  num_mel_bins: 128
+  imagenet_pretrain: True
+  audioset_pretrain: True
+  embedding_dimension: 768
+
+
+
+

@@ -1,0 +1,2 @@
+hyperparameters:
+nb_layers: 12, input_tdim: 1024, num_mel_bins: 128, imagenet_pretrain: True, audioset_pretrain: True, embedding_dimension: 768
