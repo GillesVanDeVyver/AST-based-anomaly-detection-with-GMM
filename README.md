@@ -1,13 +1,30 @@
 # AST-based-anomaly-detection-with-GMM
 
-## structure
-    ├── intermediate_data             # Here the intermediary AST embeddings are stored that serve as input the the GMM model
-    ├── intermediate_dataframes       # This contains the same information as in intermediate_data, but now stored as pandas dataframes
-    ├── pretrianed_models             # Here the pretrained AST models are cached
-    ├── src                    
-    ├── results     
-    
+## Directory structure
+
+    .
+    ├── ...                                # parent directory containing the project
+    |    ├── intermediate_data             # Here the intermediary AST embeddings are stored that serve as input the the GMM model
+    |    ├── intermediate_dataframes       # This contains the same information as in intermediate_data, but now stored as pandas dataframes
+    |    ├── pretrianed_models             # Here the pretrained AST models are cached
+    |    ├── src                    
+    |    └── results   
+    └── data
+         ├── dev_data              # Development dataset of DCASE dataset should be added here
+         |      ├── fan
+         |      |    ├── source_test
+         |      |    ├── target_test
+         |      |    ├── train
+         |      ├── gearbox
+         |      
+         
+Note that the directories data, intermediate_data,intermediate_dataframes and pretrianed_models are not present on the git repo.
+The directory dev_data (with corresponding data files) needs to be added manually at the correct location shown above.
+The directories intermediate_data,intermediate_dataframes and pretrianed_models will be created if not present when generating the intermediate data.
+     
 ## General workflow
+
+main.py invokes the methods of the two parts described below.
 
 ### AST embedding
 
