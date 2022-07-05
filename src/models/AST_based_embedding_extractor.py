@@ -1,3 +1,11 @@
+"""
+This AST based model is an adaption to the original AST.
+There are 2 important differences:
+    1) There is no MLP head, instead the average ov class and distillation token is returned in the forward method
+    2) The number of layers in the transformer encoder is adjustable
+"""
+
+
 import torch
 import torch.nn as nn
 from torch.cuda.amp import autocast
@@ -115,16 +123,15 @@ class ASTModel(nn.Module):
             if model_size != 'base384':
                 raise ValueError('currently only has base384 AudioSet pretrained model.')
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            #device=torch.device("cuda")
-            print(os. getcwd())
-            if os.path.exists('../pretrained_models/audioset_10_10_0.4593.pth') == False:
+            wd=os.path.dirname(__file__)
+            if os.path.exists(os.path.join(wd,'..','..','pretrained_models','audioset_10_10_0.4593.pth')) == False:
                 print("pretrained model does not exist, downloading")
-                if not os.path.exists('../pretrained_models/'):
-                    os.makedirs('../pretrained_models/')
+                if not os.path.exists(os.path.join(wd,'..','..','pretrained_models')):
+                    os.makedirs(os.path.join(wd,'..','..','pretrained_models'))
                 # this model performs 0.4593 mAP on the audioset eval set
                 audioset_mdl_url = 'https://www.dropbox.com/s/cv4knew8mvbrnvq/audioset_0.4593.pth?dl=1'
-                wget.download(audioset_mdl_url, out='../pretrained_models/audioset_10_10_0.4593.pth')
-            sd = torch.load('../pretrained_models/audioset_10_10_0.4593.pth', map_location=device)
+                wget.download(audioset_mdl_url, out=wd+'../pretrained_models/audioset_10_10_0.4593.pth')
+            sd = torch.load(os.path.join(wd,'..','..','pretrained_models','audioset_10_10_0.4593.pth'), map_location=device)
             audio_model = ASTModel(label_dim=527, fstride=10, tstride=10, input_fdim=128, input_tdim=1024,
                                    imagenet_pretrain=False, audioset_pretrain=False, model_size=model_size,
                                    verbose=False,number_of_layers = number_of_layers)

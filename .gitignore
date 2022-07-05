@@ -2,3 +2,5 @@ pretrained_models/
 .idea/workspace.xml
 intermediate_dataframes/
 results/
+spectrogram_dataframes/
+src/AST_model_generation/runs/

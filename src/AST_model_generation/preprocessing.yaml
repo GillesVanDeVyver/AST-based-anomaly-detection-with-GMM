@@ -1,0 +1,13 @@
+
+
+dev_data_location: '../../../data/dev_data/'
+spectrograms_location: '../../spectrograms/dev_data_spectrograms/'
+spectrogram_dataframes_location: '../../spectrogram_dataframes/dev_data_dataframes/'
+fine_tuned_models_location: "../../finetuned_models/"
+
+verbose: True
+
+epsilon: 0.1
+
+machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
+

@@ -2,7 +2,7 @@ import os, sys
 import torch
 import common
 import pandas as pd
-from models import ast_based_model
+from models import AST_based_embedding_extractor
 import yaml as yaml
 from tqdm import tqdm
 import numpy as np
@@ -14,14 +14,12 @@ class ast_embedder(): # anomaly detection ast_model
     def __init__(self,verbose=True):
 
         # adapted version of AST were we skip the MLP head and adjust the number of layers
-        audio_model_ast = ast_based_model.ASTModel(input_tdim=param['ast_model']['input_tdim'],
+        audio_model_ast = AST_based_embedding_extractor.ASTModel(input_tdim=param['ast_model']['input_tdim'],
                                 imagenet_pretrain=param['ast_model']['imagenet_pretrain'],
                                 audioset_pretrain=param['ast_model']['audioset_pretrain'],
                                 verbose=True, number_of_layers = param['ast_model']['nb_layers'])
 
         self.input_tdim = param['ast_model']['input_tdim']
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        #device = torch.device("cuda")
         self.audio_model = torch.nn.DataParallel(audio_model_ast)
         self.num_mel_bins=param['ast_model']['num_mel_bins']
         self.embedding_dimension=param['ast_model']['embedding_dimension']
