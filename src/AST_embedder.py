@@ -84,6 +84,7 @@ class ast_embedder(): # anomaly detection ast_model
                 domain_dir = machine_dir+"/"+domain
                 if debug:
                     files = os.listdir(domain_dir)[:5]
+                    print("WARNING: debug mode is on")
                 else:
                     files=os.listdir(domain_dir)
                 for filename in files:
@@ -118,11 +119,11 @@ class ast_embedder(): # anomaly detection ast_model
 
 def prepare_intemediate_data(debug=False):
     embedder=ast_embedder()
-    #embedder.generate_intermediate_tensors()
+    embedder.generate_intermediate_tensors()
     print("Done generating intermediate embeddings")
+    print("Converting intermediary data files into dataframes")
     embedder.generate_dataframes(debug=debug)
 
-#prepare_intemediate_data(True)
 
 
 

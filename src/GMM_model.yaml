@@ -1,4 +1,4 @@
-version: "0.1"
+version: "0.1.1"
 
 max_fpr: 0.1
 
