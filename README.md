@@ -49,10 +49,11 @@ Note that the AST_embedder version and GMM_model version do not necesarrily have
 
 ## Novelties
 
-### 1. AST for anomaly detection
+### 1. AST combination with GMM for anomaly detection
 
 The AST (acoustic spectrogram transfoermer) is a pure attention-based model inspired by ViT and is used for classification. 
 Here we use the AST for anomaly detection by using it to generate intermediate embeddings.
+These embeddings are then used by the anomaly detector, in this case a GMM.
 By doing this we take advantage of the powerful feature extracting properties of the AST model.
 
 ### 2. Adaptions to AST model
