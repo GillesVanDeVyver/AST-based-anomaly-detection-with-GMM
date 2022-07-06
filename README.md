@@ -16,7 +16,7 @@
          |      |    ├── target_test
          |      |    ├── train
          |      ├── gearbox
-         |      
+         |     ...  
          
 Note that the directories data, intermediate_data,intermediate_dataframes and pretrianed_models are not present on the git repo.
 The directory dev_data (with corresponding data files) needs to be added manually at the correct location shown above.
