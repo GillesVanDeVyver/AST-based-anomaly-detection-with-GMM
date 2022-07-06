@@ -7,14 +7,16 @@ import yaml as yaml
 from tqdm import tqdm
 import numpy as np
 
-with open("preprocessing.yaml") as stream:
+wd=os.path.dirname(__file__)
+
+with open(os.path.join(wd,"preprocessing.yaml")) as stream:
     param = yaml.safe_load(stream)
 
 
 # compute and save spectrograms of raw wav data
 def generate_spectrograms():
-    input_base_directory = param['dev_data_location']
-    output_base_directory= param['spectrograms_location']
+    input_base_directory = os.path.join(wd,param['dev_data_location'])
+    output_base_directory= os.path.join(wd,param['spectrograms_location'])
     if param['verbose']:
         print('Generating spectrograms')
     for machine in tqdm(os.listdir(input_base_directory)):
@@ -45,8 +47,8 @@ def convert_to_one_hot(X,nb_sections):
 # generate dataframes with same spectrogram data and the index labels for outlier exposure
 # (TODO make more efficient)
 def generate_dataframes():
-    input_base_directory= param['spectrograms_location']
-    output_base_directory = param['spectrogram_dataframes_location']
+    input_base_directory= os.path.join(wd,param['spectrograms_location'])
+    output_base_directory = os.path.join(wd,param['spectrogram_dataframes_location'])
     for machine in tqdm(param['machine_types']):
         for domain in os.listdir(input_base_directory+"/"+machine):
             tensors_in_domain = None

@@ -47,7 +47,9 @@ class ASTModel(nn.Module):
     :param model_size: the model size of AST, should be in [tiny224, small224, base224, base384], base224 and base 384 are same model, but are trained differently during ImageNet pretraining.
     """
     def __init__(self, label_dim=527, fstride=10, tstride=10, input_fdim=128, input_tdim=1024, imagenet_pretrain=True, audioset_pretrain=False, model_size='base384', verbose=True,
-                 number_of_layers = None):
+                 number_of_layers = None,model_location=None):
+
+
 
         super(ASTModel, self).__init__()
         assert timm.__version__ == '0.4.5', 'Please use timm == 0.4.5, the code might not be compatible with newer versions.'
@@ -59,7 +61,7 @@ class ASTModel(nn.Module):
         timm.models.vision_transformer.PatchEmbed = PatchEmbed
 
         # if AudioSet pretraining is not used (but ImageNet pretraining may still apply)
-        if audioset_pretrain == False:
+        if audioset_pretrain == False and model_location == None:
             if model_size == 'tiny224':
                 self.v = timm.create_model('vit_deit_tiny_distilled_patch16_224', pretrained=imagenet_pretrain)
             elif model_size == 'small224':
@@ -116,22 +118,30 @@ class ASTModel(nn.Module):
                 self.v.pos_embed = new_pos_embed
                 trunc_normal_(self.v.pos_embed, std=.02)
 
-        # now load a model that is pretrained on both ImageNet and AudioSet
-        elif audioset_pretrain == True:
+        # now load a model that is pretrained on both ImageNet and AudioSet or from cusom model location
+        elif audioset_pretrain == True or not(model_location == None):
             if audioset_pretrain == True and imagenet_pretrain == False:
                 raise ValueError('currently model pretrained on only audioset is not supported, please set imagenet_pretrain = True to use audioset pretrained model.')
             if model_size != 'base384':
                 raise ValueError('currently only has base384 AudioSet pretrained model.')
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             wd=os.path.dirname(__file__)
-            if os.path.exists(os.path.join(wd,'..','..','pretrained_models','audioset_10_10_0.4593.pth')) == False:
-                print("pretrained model does not exist, downloading")
-                if not os.path.exists(os.path.join(wd,'..','..','pretrained_models')):
-                    os.makedirs(os.path.join(wd,'..','..','pretrained_models'))
-                # this model performs 0.4593 mAP on the audioset eval set
-                audioset_mdl_url = 'https://www.dropbox.com/s/cv4knew8mvbrnvq/audioset_0.4593.pth?dl=1'
-                wget.download(audioset_mdl_url, out=wd+'../pretrained_models/audioset_10_10_0.4593.pth')
-            sd = torch.load(os.path.join(wd,'..','..','pretrained_models','audioset_10_10_0.4593.pth'), map_location=device)
+
+            if model_location == None:
+                if os.path.exists(os.path.join(wd,'..','..','pretrained_models','audioset_10_10_0.4593.pth')) == False:
+                    print("pretrained model does not exist, downloading")
+                    if not os.path.exists(os.path.join(wd,'..','..','pretrained_models')):
+                        os.makedirs(os.path.join(wd,'..','..','pretrained_models'))
+                    # this model performs 0.4593 mAP on the audioset eval set
+                    audioset_mdl_url = 'https://www.dropbox.com/s/cv4knew8mvbrnvq/audioset_0.4593.pth?dl=1'
+                    wget.download(audioset_mdl_url, out=wd+'../pretrained_models/audioset_10_10_0.4593.pth')
+                location_to_load=os.path.join(wd,'..','..','pretrained_models','audioset_10_10_0.4593.pth')
+            else:
+                if os.path.exists(model_location) == False:
+                    raise Exception('model_location does not exist')
+                else:
+                    location_to_load=model_location
+            sd = torch.load(location_to_load, map_location=device)
             audio_model = ASTModel(label_dim=527, fstride=10, tstride=10, input_fdim=128, input_tdim=1024,
                                    imagenet_pretrain=False, audioset_pretrain=False, model_size=model_size,
                                    verbose=False,number_of_layers = number_of_layers)

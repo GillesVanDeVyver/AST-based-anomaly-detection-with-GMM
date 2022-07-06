@@ -7,25 +7,38 @@ import yaml as yaml
 from tqdm import tqdm
 import numpy as np
 
-with open("AST_embedder.yaml") as stream:
+wd=os.path.dirname(__file__)
+
+
+with open(os.path.join(wd,"AST_embedder.yaml")) as stream:
     param = yaml.safe_load(stream)
+
 
 class ast_embedder(): # anomaly detection ast_model
     def __init__(self,verbose=True):
+
+        if not (param['ast_model']['finetuned_version'] ==None):
+            model_location=os.path.join(wd,"../finetuned_models/"+param['ast_model']['finetuned_version'])
+        else:
+            model_location=None
+
 
         # adapted version of AST were we skip the MLP head and adjust the number of layers
         audio_model_ast = AST_based_embedding_extractor.ASTModel(input_tdim=param['ast_model']['input_tdim'],
                                 imagenet_pretrain=param['ast_model']['imagenet_pretrain'],
                                 audioset_pretrain=param['ast_model']['audioset_pretrain'],
-                                verbose=True, number_of_layers = param['ast_model']['nb_layers'])
+                                verbose=True, number_of_layers = param['ast_model']['nb_layers'],
+                                model_location = model_location)
+
+
 
         self.input_tdim = param['ast_model']['input_tdim']
         self.audio_model = torch.nn.DataParallel(audio_model_ast)
         self.num_mel_bins=param['ast_model']['num_mel_bins']
         self.embedding_dimension=param['ast_model']['embedding_dimension']
         self.nb_layers=param['ast_model']['nb_layers']
-        self.embedding_base_directory=param['embeddings_base_location']+"_v"+param['version']+"/"
-        self.dataframes_base_directory=param['dataframes_base_location']+"_v"+param['version']+"/"
+        self.embedding_base_directory=os.path.join(wd,param['embeddings_base_location']+"_v"+param['version']+"/")
+        self.dataframes_base_directory=os.path.join(wd,param['dataframes_base_location']+"_v"+param['version']+"/")
         self.verbose=verbose
 
         if not os.path.exists(self.embedding_base_directory):
@@ -40,7 +53,8 @@ class ast_embedder(): # anomaly detection ast_model
                         ", num_mel_bins: " + str(param['ast_model']['num_mel_bins']) +
                         ", imagenet_pretrain: " + str(param['ast_model']['imagenet_pretrain']) +
                         ", audioset_pretrain: " + str(param['ast_model']['audioset_pretrain']) +
-                        ", embedding_dimension: " + str(param['ast_model']['embedding_dimension']))
+                        ", embedding_dimension: " + str(param['ast_model']['embedding_dimension']) +
+                        "finetuned_version: " + str(param['ast_model']['finetuned_version']))
 
     def get_ast_embedding_single_file(self,file_location,device):
         log_mel = common.convert_to_log_mel(file_location, num_mel_bins=self.num_mel_bins, target_length=self.input_tdim)
@@ -59,7 +73,7 @@ class ast_embedder(): # anomaly detection ast_model
 
     def generate_intermediate_tensors(self):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        dev_data_directory=param['dev_data_location']
+        dev_data_directory=os.path.join(wd,param['dev_data_location'])
         for machine in tqdm(param['machine_types']):
             for domain in tqdm(os.listdir(dev_data_directory+"/"+machine)):
                 if self.verbose:

@@ -14,7 +14,7 @@ from torch.cuda.amp import autocast,GradScaler
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 from sklearn import metrics
-import warmup_scheduler
+from src.AST_model_generation import warmup_scheduler
 from src import common
 import yaml as yaml
 from src.models import AST_classifier
@@ -22,7 +22,9 @@ from torch import nn
 from tqdm import tqdm
 import numpy as np
 
-with open("AST_training.yaml") as stream:
+wd=os.path.dirname(__file__)
+
+with open(os.path.join(wd,"AST_training.yaml")) as stream:
     param = yaml.safe_load(stream)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -45,7 +47,7 @@ def calc_AUC(audio_model, X,anomaly_labels,one_hot_labels,loss_fn,source,log=Tru
             sample=sample.to(device)
             sample_output = audio_model(sample.detach())
             sample_output = sample_output.detach()
-            sample_loss = loss_fn(sample_output, one_hot_labels_sample)
+            sample_loss = loss_fn(one_hot_labels_sample,sample_output)
         losses.append(1/sample_loss.item())
         i+=1
     auc = metrics.roc_auc_score(anomaly_labels, losses)
@@ -66,19 +68,28 @@ def generate_roc_curve(y,labels,title):
     common.generate_ROC_curve(fpr_source, tpr_source, ROC_location_source)
 
 
+def save_model(title,audio_model):
+    save_location = os.path.join(os.path.dirname(__file__),param['fine_tuned_models_location'])
+    print(save_location)
+    if not os.path.exists(save_location):
+        os.makedirs(save_location)
+    torch.save(audio_model.state_dict(), save_location+title+".pt")
 
 def train(machine,debug=False):
 
     soft= param['soft_labels']
 
-    dataframe_dir = param['spectrogram_dataframes_location'] + machine+"/"
+    wd = os.path.dirname(__file__)
+
+
+    dataframe_dir = os.path.join(wd, param['spectrogram_dataframes_location'] + machine+"/")
 
     train_location = dataframe_dir+"train/dataframe.pt"
     if soft:
         train_index_labels_location = dataframe_dir+"train/one_hot_labels_soft.pt"
     else:
         train_index_labels_location = dataframe_dir+"train/one_hot_labels.pt"
-    train_anomaly_labels_location = dataframe_dir+"train/anomaly_labels.pt"
+    #train_anomaly_labels_location = dataframe_dir+"train/anomaly_labels.pt"    # all normal => not needed
 
     validation_source_location = dataframe_dir+"source_test/dataframe.pt"
     if soft:
@@ -139,39 +150,51 @@ def train(machine,debug=False):
 
     if debug:
         X_validation_source = X_validation_source[:6]
-        X_validation_source_labels = X_validation_source_index_labels[:6]
         X_validation_target = X_validation_target[:6]
-        X_validation_target_labels = X_validation_target_index_labels[:6]
     X_train.to(device, non_blocking=True)
     batch_size = param['AST_model']['batch_size']
     nb_batches = round(len(X_train)/batch_size)
     title = model_title+"_"+machine
     if debug:
-        log_folder = "runs/debug/"+machine+"/"
+        log_folder=os.path.join(os.path.dirname(__file__), "runs/debug/"+machine+"/")
     else:
-        log_folder = "runs/"+machine+"/"
+        log_folder=os.path.join(os.path.dirname(__file__), "runs/"+machine+"/")
 
-    tb = SummaryWriter(log_folder+title)
+    tb_output_location = log_folder+title
+
+    tb = SummaryWriter(tb_output_location)
+
+    f_info = open(tb_output_location + 'version_info.txt', 'w')
+    f_info.write("hyperparameters:\n" +
+                 "nb_layers: " + str(param['AST_model']['nb_layers']) +
+                 ", depth_trainable: " + str(param['AST_model']['depth_trainable']) +
+                 ", input_tdim: " + str(param['AST_model']['input_tdim']) +
+                 ", num_mel_bins: " + str(param['AST_model']['num_mel_bins']) +
+                 ", imagenet_pretrain: " + str(param['AST_model']['imagenet_pretrain']) +
+                 ", audioset_pretrain: " + str(param['AST_model']['audioset_pretrain']) +
+                 ", model_size: " + str(param['AST_model']['model_size']) +
+                 ", lr: " + str(param['AST_model']['lr']) +
+                 ", warmup: " + str(param['AST_model']['warmup']) +
+                 ", n_epochs: " + str(param['AST_model']['n_epochs']) +
+                 ", batch_size: " + str(param['AST_model']['batch_size']) +
+                 ", shuffle: " + str(param['AST_model']['shuffle']) +
+                 ", warmup_steps: " + str(param['AST_model']['warmup_steps']))
+    f_info.close()
+
     train_loss_vals=  []
-    epoch = 1
     n_epochs=param['AST_model']['n_epochs']
     if debug:
         n_epochs = 5
-    while epoch < n_epochs:
+    for i in tqdm(range(n_epochs)):
+        epoch=i+1
         if param['AST_model']['shuffle']:
             X_train=X_train[torch.randperm(X_train.size()[0])]
-        if param['verbose']:
-            print('---------------')
-            print(datetime.datetime.now())
-            print("current #epochs=%s, #steps=%s" % (epoch, global_step))
         pos = 0
         epoch_loss= []
         if debug:
             nb_batches = 2
         audio_model.train()
         for i in range(nb_batches):
-            if i%10 == 0 & param['verbose']:
-                print("current batch: " + str(i))
             if (pos + batch_size>len(X_train)):
                 X_batch = X_train[pos:]
                 ground_truth_labels_batch=X_train_index_labels[pos:]
@@ -183,7 +206,7 @@ def train(machine,debug=False):
                 estimated_labels = audio_model(X_batch)
                 ground_truth_labels_batch_tensor=torch.tensor(ground_truth_labels_batch)
                 ground_truth_labels_batch_tensor=ground_truth_labels_batch_tensor.to(device)
-                loss = loss_fn(ground_truth_labels_batch_tensor, estimated_labels)
+                loss = loss_fn(estimated_labels,ground_truth_labels_batch_tensor)
 
             optimizer.zero_grad()
             if device=="cuda":
@@ -199,7 +222,7 @@ def train(machine,debug=False):
         avg_epoch_loss=sum(epoch_loss)/len(epoch_loss)
         train_loss_vals.append(avg_epoch_loss)
         tb.add_scalar('Loss/train', avg_epoch_loss, epoch)
-        scheduler.step(avg_epoch_loss)
+        scheduler.step(epoch)
 
         audio_model.eval() # log validation accuracy during training (and without interfering with training)
 
@@ -210,13 +233,12 @@ def train(machine,debug=False):
         calc_AUC(audio_model, X_validation_target,validation_target_anomaly_labels,
                                                     X_validation_target_index_labels,loss_fn,False,
                                                     log=True,tb=tb,epoch=epoch,debug=debug)
-        epoch += 1
+
+        if epoch%50==0 and not debug:
+            save_model(title+"_epoch"+str(epoch),audio_model)
 
     if not debug:
-        save_location = param['fine_tuned_models_location']
-        if not os.path.exists(save_location):
-            os.makedirs(save_location)
-        torch.save(audio_model.state_dict(), save_location+title+".pt")
+        save_model(title + "_epoch" + str(n_epochs),audio_model)
 
     tb.close()
 

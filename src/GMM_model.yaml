@@ -1,4 +1,4 @@
-version: "0.1.1"
+version: "0_1_1"
 
 max_fpr: 0.1
 
@@ -7,6 +7,6 @@ fit:
   cov_type: "full"
   nb_comp: 1
 
-machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
+machine_types: ["gearbox"]
 
 verbose: True

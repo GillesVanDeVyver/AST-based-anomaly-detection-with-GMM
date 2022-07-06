@@ -10,10 +10,14 @@ import AST_embedder
 from tqdm import tqdm
 import numpy as np
 
-with open("GMM_model.yaml") as stream:
+wd=os.path.dirname(__file__)
+
+
+
+with open(os.path.join(wd,"GMM_model.yaml")) as stream:
     param = yaml.safe_load(stream)
 
-with open("AST_embedder.yaml") as stream:
+with open(os.path.join(wd,"AST_embedder.yaml")) as stream:
     param_ast_embeddings = yaml.safe_load(stream)
 
 def evaluate(model,labels,X,domain,machine,result_dir,generate_ROC_curve=True):
@@ -39,7 +43,8 @@ def fit_GMM(machine):
 def eval_GMM(model,machine,result_dir):
     if param['verbose']:
         print("Start evaluating GMM model for "+machine)
-    dataframes_base_directory = param_ast_embeddings['dataframes_base_location'] + "_v" + param_ast_embeddings['version'] + "/"
+    dataframes_base_directory = os.path.join(wd,
+                    param_ast_embeddings['dataframes_base_location'] + "_v" + param_ast_embeddings['version'] + "/")
     X_source_test = pd.read_pickle(dataframes_base_directory+machine+"/source_test.pkl")
     labels_source_test=np.load(dataframes_base_directory+machine+"/source_test_labels.npy")
     auc_source,pauc_source = evaluate(model,labels_source_test, X_source_test, 'source',machine,result_dir)
@@ -51,7 +56,7 @@ def eval_GMM(model,machine,result_dir):
 
 def fit_and_eval_all_machines():
 
-    result_dir="../results/AST_v"+str(param_ast_embeddings["version"])+"-GMM_v"+str(param["version"])+"/"
+    result_dir=os.path.join(wd,"../results/AST_v"+str(param_ast_embeddings["version"])+"-GMM_v"+str(param["version"])+"/")
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
     f_results = open(result_dir+'accuracies.txt',"w")
@@ -63,8 +68,8 @@ def fit_and_eval_all_machines():
                     "nb_layers: " + str(param_ast_embeddings['ast_model']['nb_layers']) +
                     "imagenet_pretrain: " + str(param_ast_embeddings['ast_model']['imagenet_pretrain']) +
                     "audioset_pretrain: " + str(param_ast_embeddings['ast_model']['audioset_pretrain']) +
-                    "embedding_dimension" + str(param_ast_embeddings['ast_model']['embedding_dimension']))
-
+                    "embedding_dimension: " + str(param_ast_embeddings['ast_model']['embedding_dimension']) +
+                    "finetuned_version: " + str(param_ast_embeddings['ast_model']['finetuned_version']))
 
     f_parameters.close()
 
