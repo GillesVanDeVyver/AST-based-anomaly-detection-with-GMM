@@ -4,11 +4,14 @@
 
     .
     ├── ...                                # parent directory containing the project
+    |    ├── finetuned_models              # Here the AST models are stored that are finetuned on the DCASE data during step 1   
     |    ├── intermediate_data             # Here the intermediary AST embeddings are stored that serve as input the the GMM model
-    |    ├── intermediate_dataframes       # This contains the same information as in intermediate_data, but now stored as pandas dataframes
-    |    ├── pretrianed_models             # Here the pretrained AST models are cached
-    |    ├── src                    
-    |    └── results   
+    |    ├── intermediate_dataframes       # This contains the same information as the directory intermediate_data, but now stored as pandas dataframes
+    |    ├── pretrianed_models             # Here the pretrained (on ImageNet/AuioSet) AST models are cached
+    |    ├── results   
+    |    ├── spectrogram_dataframes        # This contains the same information as the directory spectrograms, but now stored as pandas dataframes
+    |    ├── spectrograms                  # The DCASE data transformed to spectrograms (see preprocessing.py)
+    |    └── src                      
     └── data
          ├── dev_data              # Development dataset of DCASE dataset should be added here
          |      ├── fan
