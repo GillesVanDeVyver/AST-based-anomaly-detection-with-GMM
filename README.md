@@ -30,14 +30,15 @@ main.py invokes the methods of the two parts described below.
 
 The first part generates embeddings originating from withing the AST. 
 These embeddings serve as input for the second step where the actual anomaly detection happens.
+This can be seen as moving from the raw data feature space (the spectrogram) to the AST embedding feature space.
 
 #### Finetuned AST model generation
 
 Instead of using the vanilla, pretrained model of AST, the model generation part trains the AST on the DCASE data.
-To do this the training procedure uses outlier detection, i.e. the model trains to classify the machine indices within each machine type available in the dataset.
-Thus, the number of output classes of the AST is changed accordingly.
-This way, the AST layers are finetuned to the dataset of the task at hand and provide more useful embeddings.
-The AST_model_generation contains the source code for this finetuning step.
+To do this, the training procedure trains to classify the machine indices within each machine type available in the dataset.
+This way, the AST will be finetuned to classify differences between sections and so will be a lot more data specific as compared to the vanilla AST model that is trained for classification on AudioSet.
+In other words, the AST layers are finetuned to the dataset of the task at hand and provide more useful embeddings.
+The AST_model_generation directory contains the source code for this finetuning step.
 
 #### Data conversion
 
