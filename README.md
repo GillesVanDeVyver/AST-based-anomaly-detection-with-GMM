@@ -28,18 +28,25 @@ main.py invokes the methods of the two parts described below.
 
 ### Part 1: AST embedding
 
+The first part generates embeddings originating from withing the AST. 
+These embeddings serve as input for the second step where the actual anomaly detection happens.
+
+#### Finetuned AST model generation
+
+Instead of using the vanilla, pretrained model of AST, the model generation part trains the AST on the DCASE data.
+To do this the training procedure uses outlier detection, i.e. the model trains to classify the machine indices within each machine type available in the dataset.
+Thus, the number of output classes of the AST is changed accordingly.
+This way, the AST layers are finetuned to the dataset of the task at hand and provide more useful embeddings.
+The AST_model_generation contains the source code for this finetuning step.
+
+#### Data conversion
+
 The first part generates embeddings originating from withing the AST and stores them as intermediary data files.
 It also converts the indivual files into pandas dataframes usable by the GMM model
 AST_embedder.py is the central file for this step.
 AST_embedder.yaml contains settings and parameters. Please increment/change the version number for different parameter settings.
 
 The AST source code is adapted in order to extract embeddings out of the AST structure (see novelties below for more info).
-
-#### Finetuned AST model generation
-Instead of using the vanilla, pretrained model of AST, the model generation part trains the AST on the DCASE data.
-To do this the training procedure uses outlier detection, i.e. the model trains to classify the machine indices within each machine type available in the dataset.
-Thus, the number of output classes of the AST is changed accordingly.
-This way, the AST layers are finetuned to the dataset of the task at hand and provide more useful embeddings.
 
 ### Part 2: GMM model
 This parts defines a GMM model, fits it on the train pandas dataframes and evaluates it on the source and target test ones.
@@ -55,7 +62,7 @@ Note that the AST_embedder version and GMM_model version do not necesarrily have
 The AST (acoustic spectrogram transfoermer) is a pure attention-based model inspired by ViT and is used for classification. 
 Here we use the AST for anomaly detection by using it to generate intermediate embeddings.
 These embeddings are then used by the anomaly detector, in this case a GMM.
-By doing this we take advantage of the powerful feature extracting properties of the AST model.
+By doing this we take advantage of the powerful feature extracting properties of the AST model and give an answer to the problem of limited available data.
 Figures AST-GMM_structure.png and AST-GMM_structure_block_diagram.png shows exactly where the intermediate embeddings are extracted.
 
 ### 2. Adaptions to AST model
