@@ -35,9 +35,9 @@ def custom_plot(epochs, loss,figname,debug):
     else:
         plt.savefig("results/"+figname+".png")
 
-def calc_AUC(audio_model, X,anomaly_labels,one_hot_labels,loss_fn,source,log=True,tb=None,epoch=None,debug=False,max_fpr=0.1,device=device):
+def calc_AUC(audio_model, X,anomaly_labels,one_hot_labels,loss_fn,source,log=True,tb=None,epoch=None,max_fpr=0.1,device="cuda"):
     if log and tb==None:
-        raise Exception("no tensorboard to log to given")
+        raise Exception("No tensorboard to log to given")
     losses = []
     i=0
     for sample in X:
@@ -45,8 +45,7 @@ def calc_AUC(audio_model, X,anomaly_labels,one_hot_labels,loss_fn,source,log=Tru
         with autocast():
             sample = torch.unsqueeze(sample, dim=0)
             sample=sample.to(device)
-            sample_output = audio_model(sample.detach())
-            sample_output = sample_output.detach()
+            sample_output = audio_model(sample.detach()).detach()
             sample_loss = loss_fn(one_hot_labels_sample,sample_output)
         losses.append(1/sample_loss.item())
         i+=1
@@ -61,6 +60,33 @@ def calc_AUC(audio_model, X,anomaly_labels,one_hot_labels,loss_fn,source,log=Tru
         tb.add_scalar('AUC_scores/'+label, auc, epoch)
         tb.add_scalar('pAUC_scores/'+label, pauc,epoch)
     return losses,auc,pauc
+
+def calc_acc(audio_model, X,one_hot_labels,source,epoch,tb,device="cuda",log=True):
+    if log and tb==None:
+        raise Exception("No tensorboard to log to given")
+    correct_count=0
+    total_count=0
+    for sample in X:
+        one_hot_labels_sample=torch.tensor([one_hot_labels[total_count]])
+        with autocast():
+            sample = torch.unsqueeze(sample, dim=0)
+            sample = sample.to(device)
+            sample_output = audio_model(sample.detach()).detach()
+            estimated_label=np.argmax(sample_output.cpu())
+            correct_label=np.argmax(one_hot_labels_sample)
+            if estimated_label==correct_label:
+                correct_count+=1
+        total_count+=1
+    acc = correct_count/total_count
+    if param['verbose']:
+        print("accuracy: "+str(acc))
+    if log:
+        label = 'target'
+        if source:
+            label = 'source'
+        tb.add_scalar('Accuracy/'+label, acc, epoch)
+        tb.add_scalar('Accuracy/'+label, acc,epoch)
+    return acc
 
 def generate_roc_curve(y,labels,title):
     fpr_source, tpr_source, thresholds_source = metrics.roc_curve(labels, y)
@@ -229,16 +255,18 @@ def train(machine,debug=False):
 
         calc_AUC(audio_model, X_validation_source,validation_source_anomaly_labels
                                                     ,X_validation_source_index_labels,loss_fn,True,
-                                                    log=True,tb=tb,epoch=epoch,debug=debug)
+                                                    log=True,tb=tb,epoch=epoch)
         calc_AUC(audio_model, X_validation_target,validation_target_anomaly_labels,
                                                     X_validation_target_index_labels,loss_fn,False,
-                                                    log=True,tb=tb,epoch=epoch,debug=debug)
+                                                    log=True,tb=tb,epoch=epoch)
+        calc_acc(audio_model, X_validation_source, X_validation_source_index_labels, True, epoch, tb, device=device, log=True)
+        calc_acc(audio_model, X_validation_target, X_validation_target_index_labels, False, epoch, tb, device=device, log=True)
 
         if epoch%50==0 and not debug:
-            save_model(title+"_epoch"+str(epoch),audio_model)
+            save_model(model_title+"_epoch"+str(epoch)+"_"+machine,audio_model)
 
     if not debug:
-        save_model(title + "_epoch" + str(n_epochs),audio_model)
+        save_model(model_title+"_epoch"+str(epoch)+"_"+machine,audio_model)
 
     tb.close()
 
