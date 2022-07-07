@@ -2,7 +2,7 @@ import os, sys
 import torch
 import common
 import pandas as pd
-from models import AST_based_embedding_extractor
+from models import AST_based_model
 import yaml as yaml
 from tqdm import tqdm
 import numpy as np
@@ -21,14 +21,13 @@ class ast_embedder(): # anomaly detection ast_model
             model_location=None
 
         # adapted version of AST were we skip the MLP head and adjust the number of layers
-        audio_model_ast = AST_based_embedding_extractor.ASTModel(input_tdim=param['ast_model']['input_tdim'],
+        self.audio_model = AST_based_model.ASTModel(input_tdim=param['ast_model']['input_tdim'],
                                 imagenet_pretrain=param['ast_model']['imagenet_pretrain'],
                                 audioset_pretrain=param['ast_model']['audioset_pretrain'],
                                 verbose=True, number_of_layers = param['ast_model']['nb_layers'],
                                 model_location = model_location)
 
         self.input_tdim = param['ast_model']['input_tdim']
-        self.audio_model = torch.nn.DataParallel(audio_model_ast)
         self.num_mel_bins=param['ast_model']['num_mel_bins']
         self.embedding_dimension=param['ast_model']['embedding_dimension']
         self.nb_layers=param['ast_model']['nb_layers']
@@ -59,7 +58,7 @@ class ast_embedder(): # anomaly detection ast_model
         input = torch.unsqueeze(log_mel, dim=0)
         input=input.to(device)
         self.audio_model=self.audio_model.to(device)
-        output = self.audio_model(input)
+        output = self.audio_model.extract_embedding(input)
         return output
 
     # Get the embedding as output from the AST embedder and save the result at the given output directory
