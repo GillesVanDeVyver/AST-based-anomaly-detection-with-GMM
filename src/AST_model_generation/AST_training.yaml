@@ -24,6 +24,8 @@ AST_model:
   shuffle: True
   warmup_steps: 10
 
+save_interval: 50
+
 soft_labels: True
 
 verbose: True

@@ -33,6 +33,7 @@ def generate_spectrograms():
                     log_mel = common.convert_to_log_mel(file_location)
                     torch.save(log_mel, output_location)
 
+# convert section labels to one hot encodings
 def convert_to_one_hot(X,nb_sections):
     one_hot_labels_soft = np.full((len(X), nb_sections), param["epsilon"], dtype=float)
     one_hot_labels = np.zeros((len(X), nb_sections), dtype=float)
@@ -44,7 +45,7 @@ def convert_to_one_hot(X,nb_sections):
     return one_hot_labels,one_hot_labels_soft
 
 
-# generate dataframes with same spectrogram data and the index labels for outlier exposure
+# generate dataframes with same spectrogram data and the section labels for outlier exposure
 # (TODO make more efficient)
 def generate_dataframes():
     input_base_directory= os.path.join(wd,param['spectrograms_location'])
@@ -53,7 +54,7 @@ def generate_dataframes():
         for domain in os.listdir(input_base_directory+"/"+machine):
             tensors_in_domain = None
             anomaly_lables = []
-            index_lables=[]
+            section_lables=[]
             if param['verbose']:
                 print("starting " + machine+" "+domain)
             input_directory = input_base_directory + machine + "/" + domain
@@ -69,7 +70,7 @@ def generate_dataframes():
                         anomaly_lables.append(0)
                     section_as_str = filename[9]
                     section = int(section_as_str)
-                    index_lables.append(section)
+                    section_lables.append(section)
                     loaded_tensor = torch.unsqueeze(torch.load(file_location),0)
                     if tensors_in_domain == None:
                         tensors_in_domain = loaded_tensor
@@ -79,12 +80,12 @@ def generate_dataframes():
             output_location_one_hot_labels = output_directory + "one_hot_labels.pt"
             output_location_one_hot_labels_soft = output_directory + "one_hot_labels_soft.pt"
             output_location_anomaly_labels = output_directory + "anomaly_labels.pt"
-            output_location_indices = output_directory + "index_labels.pt"
-            nb_classes = max(index_lables) + 1
-            one_hot_labels,one_hot_labels_soft=convert_to_one_hot(index_lables,nb_classes)
+            output_location_sections = output_directory + "index_labels.pt"
+            nb_classes = max(section_lables) + 1
+            one_hot_labels,one_hot_labels_soft=convert_to_one_hot(section_lables,nb_classes)
             torch.save(one_hot_labels, output_location_one_hot_labels)
             torch.save(one_hot_labels_soft, output_location_one_hot_labels_soft)
-            torch.save(index_lables, output_location_indices)
+            torch.save(section_lables, output_location_sections)
             torch.save(tensors_in_domain.detach(),output_location_dataframe)
             torch.save(anomaly_lables,output_location_anomaly_labels)
 

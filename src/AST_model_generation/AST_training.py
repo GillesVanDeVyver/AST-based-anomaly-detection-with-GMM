@@ -28,14 +28,13 @@ with open(os.path.join(wd,"AST_training.yaml")) as stream:
     param = yaml.safe_load(stream)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-def custom_plot(epochs, loss,figname,debug):
-    plt.plot(epochs, loss)
-    if debug:
-        plt.savefig("debug_results/"+figname+".png")
-    else:
-        plt.savefig("results/"+figname+".png")
 
-def calc_AUC(audio_model, X,anomaly_labels,one_hot_labels,loss_fn,source,log=True,tb=None,epoch=None,max_fpr=0.1,device="cuda"):
+# Calculate AUC of given model on given data for outlier exposure on section indices.
+# Outlier exposure means we treat the section indices as unknown and do classification. If the estimated probability
+# of the correct section is to low, the sample is deemed to be anomalous.
+# If log is True, the results are logged to Tensorboard
+# max_fpr is used for calculating the partial AUC
+def calc_AUC(audio_model, X,anomaly_labels,one_hot_labels,loss_fn,source,epoch,tb,log=True,max_fpr=0.1,device="cuda"):
     if log and tb==None:
         raise Exception("No tensorboard to log to given")
     losses = []
@@ -61,6 +60,8 @@ def calc_AUC(audio_model, X,anomaly_labels,one_hot_labels,loss_fn,source,log=Tru
         tb.add_scalar('pAUC_scores/'+label, pauc,epoch)
     return losses,auc,pauc
 
+# Calculate accuracy of given model on given data
+# if log is True, the results are logged to Tensorboard
 def calc_acc(audio_model, X,one_hot_labels,source,epoch,tb,device="cuda",log=True):
     if log and tb==None:
         raise Exception("No tensorboard to log to given")
@@ -93,7 +94,7 @@ def generate_roc_curve(y,labels,title):
     ROC_location_source="results/"+title+".png"
     common.generate_ROC_curve(fpr_source, tpr_source, ROC_location_source)
 
-
+# Save the given model at the location specified in the yaml paramters with the given title
 def save_model(title,audio_model):
     save_location = os.path.join(os.path.dirname(__file__),param['fine_tuned_models_location'])
     if not os.path.exists(save_location):
@@ -104,12 +105,8 @@ def save_model(title,audio_model):
     torch.save(audio_model.state_dict(), loc)
 
 def train(machine,debug=False):
-
-    soft= param['soft_labels']
-
+    soft= param['soft_labels'] # soft or hard labels of one hot encoding
     wd = os.path.dirname(__file__)
-
-
     dataframe_dir = os.path.join(wd, param['spectrogram_dataframes_location'] + machine+"/")
 
     train_location = dataframe_dir+"train/dataframe.pt"
@@ -151,22 +148,17 @@ def train(machine,debug=False):
                                           model_size=param['AST_model']['model_size'],
                                           verbose=param['verbose'],
                                           number_of_layers=param['AST_model']['nb_layers'])
-
     audio_model = audio_model.to(device)
     audio_model.train()
-
     model_title = "AST_classifier_"+param['version']
     if param['verbose']:
         print('running on ' + str(device))
     torch.set_grad_enabled(True)
 
-
-
     # Set up the optimizer
     trainables = [p for p in audio_model.parameters() if p.requires_grad]
     if param['verbose']:
         print('Number of trainable parameters is : {:.3f} million'.format(sum(p.numel() for p in trainables) / 1e6))
-
     optimizer = torch.optim.Adam(trainables,param['AST_model']['lr'])
     if param['AST_model']['warmup']:
         scheduler = warmup_scheduler.WarmupLR(optimizer,warmup_steps=param['AST_model']['warmup_steps'])
@@ -179,6 +171,7 @@ def train(machine,debug=False):
     if debug:
         X_validation_source = X_validation_source[:6]
         X_validation_target = X_validation_target[:6]
+
     X_train.to(device, non_blocking=True)
     batch_size = param['AST_model']['batch_size']
     nb_batches = round(len(X_train)/batch_size)
@@ -189,10 +182,8 @@ def train(machine,debug=False):
         log_folder=os.path.join(os.path.dirname(__file__), "runs/"+machine+"/")
 
     tb_output_location = log_folder+title
-
     tb = SummaryWriter(tb_output_location)
-
-    f_info = open(tb_output_location + 'version_info.txt', 'w')
+    f_info = open(tb_output_location + 'version_info.txt', 'w') # Log parameters used during current run
     f_info.write("hyperparameters:\n" +
                  "nb_layers: " + str(param['AST_model']['nb_layers']) +
                  ", depth_trainable: " + str(param['AST_model']['depth_trainable']) +
@@ -235,7 +226,6 @@ def train(machine,debug=False):
                 ground_truth_labels_batch_tensor=torch.tensor(ground_truth_labels_batch)
                 ground_truth_labels_batch_tensor=ground_truth_labels_batch_tensor.to(device)
                 loss = loss_fn(estimated_labels,ground_truth_labels_batch_tensor)
-
             optimizer.zero_grad()
             if device=="cuda":
                 scaler.scale(loss).backward()
@@ -246,37 +236,30 @@ def train(machine,debug=False):
                 optimizer.step()
             epoch_loss.append(loss.item())
             global_step += 1
-
         avg_epoch_loss=sum(epoch_loss)/len(epoch_loss)
         train_loss_vals.append(avg_epoch_loss)
         tb.add_scalar('Loss/train', avg_epoch_loss, epoch)
         scheduler.step(epoch)
 
         audio_model.eval() # log validation accuracy during training (and without interfering with training)
+        calc_AUC(audio_model, X_validation_source,validation_source_anomaly_labels,X_validation_source_index_labels,
+                 loss_fn,True,epoch,tb,log=True,device=device)
+        calc_AUC(audio_model, X_validation_target,validation_target_anomaly_labels,X_validation_target_index_labels,
+                 loss_fn,False,epoch,tb,log=True,device=device)
+        calc_acc(audio_model, X_validation_source, X_validation_source_index_labels, True, epoch, tb,
+                 device=device, log=True)
+        calc_acc(audio_model, X_validation_target, X_validation_target_index_labels, False, epoch, tb,
+                 device=device, log=True)
 
-
-        calc_AUC(audio_model, X_validation_source,validation_source_anomaly_labels
-                                                    ,X_validation_source_index_labels,loss_fn,True,
-                                                    log=True,tb=tb,epoch=epoch)
-        calc_AUC(audio_model, X_validation_target,validation_target_anomaly_labels,
-                                                    X_validation_target_index_labels,loss_fn,False,
-                                                    log=True,tb=tb,epoch=epoch)
-        calc_acc(audio_model, X_validation_source, X_validation_source_index_labels, True, epoch, tb, device=device, log=True)
-        calc_acc(audio_model, X_validation_target, X_validation_target_index_labels, False, epoch, tb, device=device, log=True)
-
-        if epoch%50==0 and not debug:
+        if epoch%param['save_interval']==0 and not debug: # Save model after each inteval
             save_model(model_title+"_epoch"+str(epoch)+"_"+machine,audio_model)
-
-    if not debug:
+    if not debug: # Save final model
         save_model(model_title+"_epoch"+str(epoch)+"_"+machine,audio_model)
-
     tb.close()
 
 
 def train_all_machines(debug=False):
-
     for machine in tqdm(param['machine_types']):
-
         train(debug=debug,machine=machine)
         if param['verbose']:
             print(machine + " done")
