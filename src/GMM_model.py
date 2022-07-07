@@ -62,14 +62,14 @@ def fit_and_eval_all_machines():
     f_results = open(result_dir+'accuracies.txt',"w")
     f_parameters = open(result_dir+'hyperparameters.txt',"w")
     f_parameters.write("Hyperparameters:\n" +
-                    "nb_comp: " + str(param["fit"]["nb_comp"])+", n_init: "+ str(param["fit"]["n_init"])+\
+                    ", nb_comp: " + str(param["fit"]["nb_comp"])+", n_init: "+ str(param["fit"]["n_init"])+\
                     ", covariance_type: "+ param["fit"]["cov_type"] +
                     "\n Embedding_parameters:\n" +
-                    "nb_layers: " + str(param_ast_embeddings['ast_model']['nb_layers']) +
-                    "imagenet_pretrain: " + str(param_ast_embeddings['ast_model']['imagenet_pretrain']) +
-                    "audioset_pretrain: " + str(param_ast_embeddings['ast_model']['audioset_pretrain']) +
-                    "embedding_dimension: " + str(param_ast_embeddings['ast_model']['embedding_dimension']) +
-                    "finetuned_version: " + str(param_ast_embeddings['ast_model']['finetuned_version']))
+                    ", nb_layers: " + str(param_ast_embeddings['ast_model']['nb_layers']) +
+                    ", imagenet_pretrain: " + str(param_ast_embeddings['ast_model']['imagenet_pretrain']) +
+                    ", audioset_pretrain: " + str(param_ast_embeddings['ast_model']['audioset_pretrain']) +
+                    ", embedding_dimension: " + str(param_ast_embeddings['ast_model']['embedding_dimension']) +
+                    ", finetuned_version: " + str(param_ast_embeddings['ast_model']['finetuned_version']))
 
     f_parameters.close()
 

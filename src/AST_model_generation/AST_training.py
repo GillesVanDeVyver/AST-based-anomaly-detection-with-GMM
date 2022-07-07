@@ -96,10 +96,12 @@ def generate_roc_curve(y,labels,title):
 
 def save_model(title,audio_model):
     save_location = os.path.join(os.path.dirname(__file__),param['fine_tuned_models_location'])
-    print(save_location)
     if not os.path.exists(save_location):
         os.makedirs(save_location)
-    torch.save(audio_model.state_dict(), save_location+title+".pt")
+    loc= save_location+title+".pt"
+    if param['verbose']:
+        print("Saving model at location " + loc)
+    torch.save(audio_model.state_dict(), loc)
 
 def train(machine,debug=False):
 
