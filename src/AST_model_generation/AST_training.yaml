@@ -7,7 +7,7 @@ spectrogram_dataframes_location: '../../spectrogram_dataframes/dev_data_datafram
 fine_tuned_models_location: "../../finetuned_models/"
 
 
-machine_types: ["ToyTrain","fan","pump","ToyCar"]
+machine_types: ["fan","pump","ToyCar"]
 
 AST_model:
   nb_layers: 3
@@ -19,12 +19,12 @@ AST_model:
   model_size: 'base384'
   lr: 0.000000005
   warmup: True
-  n_epochs: 400
+  n_epochs: 50
   batch_size: 16
   shuffle: True
   warmup_steps: 10
 
-save_interval: 50
+save_interval: 10
 
 soft_labels: True
 

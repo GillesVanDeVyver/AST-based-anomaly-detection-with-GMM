@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 6/10/21 11:00 PM
-# @Author  : Yuan Gong
-# @Affiliation  : Massachusetts Institute of Technology
-# @Email   : yuangong@mit.edu
-# @File    : traintest.py
-
 import sys
 import os
 import datetime
@@ -17,7 +10,7 @@ from sklearn import metrics
 from src.AST_model_generation import warmup_scheduler
 from src import common
 import yaml as yaml
-from src.models import AST_classifier
+from src.models import AST_based_model
 from torch import nn
 from tqdm import tqdm
 import numpy as np
