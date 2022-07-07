@@ -7,6 +7,6 @@ fit:
   cov_type: "full"
   nb_comp: 1
 
-machine_types: ["gearbox"]
+machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
 
 verbose: True

@@ -1,4 +1,4 @@
-version: "0_3_1"
+version: "0_3_3"
 
 
 embeddings_base_location: '../intermediate_data/dev_data_embeddings'
@@ -16,7 +16,7 @@ ast_model:
   imagenet_pretrain: True
   audioset_pretrain: True
   embedding_dimension: 768
-  finetuned_version: "AST_classifier_0.1.2_gearbox.pt"
+  finetuned_version: "AST_classifier_0_2_4_epoch400"
 
 
 

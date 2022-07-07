@@ -7,7 +7,7 @@ spectrogram_dataframes_location: '../../spectrogram_dataframes/dev_data_datafram
 fine_tuned_models_location: "../../finetuned_models/"
 
 
-machine_types: ["gearbox"]
+machine_types: ["ToyTrain","fan","pump","ToyCar"]
 
 AST_model:
   nb_layers: 3

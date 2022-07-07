@@ -15,12 +15,13 @@ with open(os.path.join(wd,"AST_embedder.yaml")) as stream:
 
 
 class ast_embedder(): # anomaly detection ast_model
-    def __init__(self,verbose=True):
+    def __init__(self,machine,verbose=True):
 
         if not (param['ast_model']['finetuned_version'] ==None):
-            model_location=os.path.join(wd,"../finetuned_models/"+param['ast_model']['finetuned_version'])
+            model_location=os.path.join(wd,"../finetuned_models/"+param['ast_model']['finetuned_version']+"_"+machine+'.pt')
         else:
             model_location=None
+
 
 
         # adapted version of AST were we skip the MLP head and adjust the number of layers
@@ -54,7 +55,7 @@ class ast_embedder(): # anomaly detection ast_model
                         ", imagenet_pretrain: " + str(param['ast_model']['imagenet_pretrain']) +
                         ", audioset_pretrain: " + str(param['ast_model']['audioset_pretrain']) +
                         ", embedding_dimension: " + str(param['ast_model']['embedding_dimension']) +
-                        "finetuned_version: " + str(param['ast_model']['finetuned_version']))
+                        ", finetuned_version: " + str(param['ast_model']['finetuned_version']))
 
     def get_ast_embedding_single_file(self,file_location,device):
         log_mel = common.convert_to_log_mel(file_location, num_mel_bins=self.num_mel_bins, target_length=self.input_tdim)
@@ -71,70 +72,70 @@ class ast_embedder(): # anomaly detection ast_model
             os.makedirs(output_directory)
         torch.save(output,output_location)
 
-    def generate_intermediate_tensors(self):
+    def generate_intermediate_tensors(self,machine):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         dev_data_directory=os.path.join(wd,param['dev_data_location'])
-        for machine in tqdm(param['machine_types']):
-            for domain in tqdm(os.listdir(dev_data_directory+"/"+machine)):
-                if self.verbose:
-                    print("generating intermediary files for "+machine+" " + domain)
-                input_directory = dev_data_directory + machine + "/" + domain
-                output_directory = self.embedding_base_directory + machine+'/'+domain
-                for filename in os.listdir(input_directory):
-                    if filename.endswith(".wav"):
-                        file_location = os.path.join(input_directory, filename)
-                        sample_name = os.path.splitext(file_location[len(input_directory):])[0]
-                        self.generate_and_save_embeddings(file_location,output_directory,sample_name,device)
-                print(machine+" "+domain+" done")
+        for domain in tqdm(os.listdir(dev_data_directory+"/"+machine)):
+            if self.verbose:
+                print("generating intermediary files for "+machine+" " + domain)
+            input_directory = dev_data_directory + machine + "/" + domain
+            output_directory = self.embedding_base_directory + machine+'/'+domain
+            for filename in os.listdir(input_directory):
+                if filename.endswith(".wav"):
+                    file_location = os.path.join(input_directory, filename)
+                    sample_name = os.path.splitext(file_location[len(input_directory):])[0]
+                    self.generate_and_save_embeddings(file_location,output_directory,sample_name,device)
+            print(machine+" "+domain+" done")
 
-    def generate_dataframes(self,format="GMM",debug=False):
+    def generate_dataframes(self,machine,format="GMM",debug=False):
         tensors_in_domain = None
         lables = []
-        for machine in tqdm(param['machine_types']):
-            machine_dir=self.embedding_base_directory+"/"+machine
-            for domain in tqdm(os.listdir(machine_dir)):
-                domain_dir = machine_dir+"/"+domain
-                if debug:
-                    files = os.listdir(domain_dir)[:5]
-                    print("WARNING: debug mode is on")
-                else:
-                    files=os.listdir(domain_dir)
-                for filename in files:
-                    if filename.endswith(".pt"):
-                        if format=="one_class_svm":
-                            if "anomaly" in filename:
-                                lables.append(-1)
-                            else:
-                                lables.append(1)
-                        elif format=="GMM":
-                            if "anomaly" in filename:
-                                lables.append(1)
-                            else:
-                                lables.append(0)
-                        file_location = domain_dir + "/" + filename
-                        loaded_tensor = torch.load(file_location)
-                        if tensors_in_domain == None:
-                            tensors_in_domain = loaded_tensor
+        machine_dir=self.embedding_base_directory+"/"+machine
+        for domain in tqdm(os.listdir(machine_dir)):
+            domain_dir = machine_dir+"/"+domain
+            if debug:
+                files = os.listdir(domain_dir)[:5]
+                print("WARNING: debug mode is on")
+            else:
+                files=os.listdir(domain_dir)
+            for filename in files:
+                if filename.endswith(".pt"):
+                    if format=="one_class_svm":
+                        if "anomaly" in filename:
+                            lables.append(-1)
                         else:
-                            loaded_tensor.to("cpu")
-                            tensors_in_domain.to('cpu')
-                            tensors_in_domain = torch.cat((tensors_in_domain, loaded_tensor))
-                px = pd.DataFrame(tensors_in_domain.detach().cpu().numpy())
-                output_dir = self.dataframes_base_directory + machine + '/'
-                if not os.path.exists(output_dir):
-                    os.makedirs(output_dir)
-                output_location = output_dir + domain+".pkl"
-                px.to_pickle(output_location)
-                output_location_labels=output_dir + domain+"_labels.npy"
-                np.save(output_location_labels,np.array(lables))
+                            lables.append(1)
+                    elif format=="GMM":
+                        if "anomaly" in filename:
+                            lables.append(1)
+                        else:
+                            lables.append(0)
+                    file_location = domain_dir + "/" + filename
+                    loaded_tensor = torch.load(file_location)
+                    if tensors_in_domain == None:
+                        tensors_in_domain = loaded_tensor
+                    else:
+                        loaded_tensor.to("cpu")
+                        tensors_in_domain.to('cpu')
+                        tensors_in_domain = torch.cat((tensors_in_domain, loaded_tensor))
+            px = pd.DataFrame(tensors_in_domain.detach().cpu().numpy())
+            output_dir = self.dataframes_base_directory + machine + '/'
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            output_location = output_dir + domain+".pkl"
+            px.to_pickle(output_location)
+            output_location_labels=output_dir + domain+"_labels.npy"
+            np.save(output_location_labels,np.array(lables))
 
 
 def prepare_intemediate_data(debug=False):
-    embedder=ast_embedder()
-    embedder.generate_intermediate_tensors()
-    print("Done generating intermediate embeddings")
-    print("Converting intermediary data files into dataframes")
-    embedder.generate_dataframes(debug=debug)
+    for machine in tqdm(param['machine_types']):
+
+        embedder=ast_embedder(machine)
+        embedder.generate_intermediate_tensors(machine)
+        print("Done generating intermediate embeddings")
+        print("Converting intermediary data files into dataframes")
+        embedder.generate_dataframes(machine,debug=debug)
 
 
 
