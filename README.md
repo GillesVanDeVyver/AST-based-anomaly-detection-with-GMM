@@ -33,15 +33,16 @@ main.py invokes the methods of the two parts described below.
 
 The first part generates embeddings originating from withing the AST. 
 These embeddings serve as input for the second step where the actual anomaly detection happens.
-This can be seen as moving from the raw data feature space (the spectrogram) to the AST embedding feature space.
+This can be seen as moving from the raw data feature space (the spectrogram) to an AST embedding feature space.
 
 #### Finetuned AST model generation
 
-Instead of using the vanilla, pretrained model of AST, the model generation part trains the AST on the DCASE data.
-To do this, the training procedure trains to classify the machine indices within each machine type available in the dataset.
-This way, the AST will be finetuned to classify differences between sections and so will be a lot more data specific as compared to the vanilla AST model that is trained for classification on AudioSet.
+Instead of using the vanilla, pretrained model of AST for embedding extraction, the model generation part trains the AST on the DCASE data prior to extracting features.
+To do this, the training procedure trains to classify the machine indices within each machine type available in the dataset (see DCASE dataset section).
+This way, the AST will be finetuned to classify differences between sections and so will be more data specific as compared to the vanilla AST model that is trained for classification on AudioSet.
 In other words, the AST layers are finetuned to the dataset of the task at hand and provide more useful embeddings.
 The AST_model_generation directory contains the source code for this finetuning step.
+Figure Part1_finetune_block_diagram.PNG shows the finetuning schematically.
 
 #### Data conversion
 
@@ -53,10 +54,12 @@ AST_embedder.yaml contains settings and parameters. Please increment/change the 
 The AST source code is adapted in order to extract embeddings out of the AST structure (see novelties below for more info).
 
 ### Part 2: GMM model
-This parts defines a GMM model, fits it on the train pandas dataframes and evaluates it on the source and target test ones.
+This parts defines a GMM model, fits it on the pandas dataframes of the train data and evaluates it on the dataframes of the source and target test sets.
 GMM_model.py is the central file for this step.
 GMM_model.yaml contains settings and parameters. Please increment/change the version number for different parameter settings.
 Note that the AST_embedder version and GMM_model version do not necesarrily have to be the same.
+Figure Part2_block_diagram.PNG shows step 2 schematically.
+Note that the AST based model from step 1 is kept constant in this step, i.e. not trained.
 
 
 ## Novelties
