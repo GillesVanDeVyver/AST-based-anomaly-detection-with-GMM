@@ -1,4 +1,4 @@
-version: "0_3_3"
+version: "0_3_2"
 
 
 embeddings_base_location: '../intermediate_data/dev_data_embeddings'
@@ -7,7 +7,7 @@ dataframes_base_location: '../intermediate_dataframes/dev_data_embeddings_datafr
 
 
 dev_data_location: '../../data/dev_data/'
-machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
+machine_types: ["pump","ToyCar"]
 
 ast_model:
   nb_layers: 3
@@ -16,7 +16,7 @@ ast_model:
   imagenet_pretrain: True
   audioset_pretrain: True
   embedding_dimension: 768
-  finetuned_version: "AST_classifier_0_2_4_epoch400"
+  finetuned_version: "AST_classifier_0_2_4_epoch50"
 
 
 
