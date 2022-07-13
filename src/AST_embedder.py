@@ -51,6 +51,7 @@ class ast_embedder(): # anomaly detection ast_model
                         ", audioset_pretrain: " + str(param['ast_model']['audioset_pretrain']) +
                         ", embedding_dimension: " + str(param['ast_model']['embedding_dimension']) +
                         ", finetuned_version: " + str(param['ast_model']['finetuned_version']))
+        f_info.close()
 
     # Run the model on a single raw data file and return its embedding, i.e. the output from the AST embedder
     def get_ast_embedding_single_file(self,file_location,device):
@@ -88,10 +89,11 @@ class ast_embedder(): # anomaly detection ast_model
     # Generate pandas dataframes from the embeddings. These contain the same information as as the tensors
     # Also generate the anomaly labels based on the filename
     def generate_dataframes(self,machine,format="GMM",debug=False):
-        tensors_in_domain = None
-        lables = []
+
         machine_dir=self.embedding_base_directory+"/"+machine
         for domain in tqdm(os.listdir(machine_dir)):
+            tensors_in_domain = None
+            lables = []
             domain_dir = machine_dir+"/"+domain
             if debug:
                 files = os.listdir(domain_dir)[:5]

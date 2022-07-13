@@ -1,5 +1,7 @@
 import os
+import sys
 from src import common
+sys.path.append("..")
 import torch
 import pandas as pd
 import re

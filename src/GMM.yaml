@@ -1,0 +1,8 @@
+max_fpr: 0.1
+
+ast_embedding_size: 768
+
+
+fit:
+  n_init: 10
+  cov_type: "full"

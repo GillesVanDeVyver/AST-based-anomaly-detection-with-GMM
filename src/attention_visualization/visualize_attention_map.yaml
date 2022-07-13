@@ -1,0 +1,16 @@
+version: "0_0_1"
+
+dev_data_location: '../../../data/dev_data/'
+spectrogram_as_png_location: './spectrograms_as_png/'
+attention_maps_loaction: 'attention_maps'
+
+machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
+
+ast_model:
+  nb_layers: 3
+  input_tdim: 1024
+  num_mel_bins: 128
+  imagenet_pretrain: True
+  audioset_pretrain: True
+  embedding_dimension: 768
+  finetuned_version: "AST_classifier_0_2_4_epoch50"

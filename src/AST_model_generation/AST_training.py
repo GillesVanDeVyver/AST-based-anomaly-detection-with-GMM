@@ -7,10 +7,10 @@ from torch.cuda.amp import autocast,GradScaler
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 from sklearn import metrics
-from src.AST_model_generation import warmup_scheduler
-from src import common
+from AST_based_anomaly_detection_with_GMM.src.AST_model_generation import warmup_scheduler
+from AST_based_anomaly_detection_with_GMM.src import common
 import yaml as yaml
-from src.models import AST_based_model
+from AST_based_anomaly_detection_with_GMM.src.models import AST_based_model
 from torch import nn
 from tqdm import tqdm
 import numpy as np
@@ -135,7 +135,7 @@ def train(machine,debug=False):
     validation_target_anomaly_labels = torch.load(validation_target_anomaly_labels_location)
 
     nb_classes = len(X_train_index_labels[0])
-    audio_model = AST_classifier.ASTModel(label_dim=nb_classes,input_tdim=param['AST_model']['input_tdim'],
+    audio_model = AST_based_model.ASTModel(label_dim=nb_classes,input_tdim=param['AST_model']['input_tdim'],
                                           imagenet_pretrain=param['AST_model']['imagenet_pretrain'],
                                           audioset_pretrain=param['AST_model']['audioset_pretrain'],
                                           model_size=param['AST_model']['model_size'],

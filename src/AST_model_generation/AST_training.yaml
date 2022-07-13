@@ -1,4 +1,4 @@
-version: "0_2_4"
+version: "0_2_5"
 
 
 dev_data_location: '../../../data/dev_data/'
@@ -7,10 +7,10 @@ spectrogram_dataframes_location: '../../spectrogram_dataframes/dev_data_datafram
 fine_tuned_models_location: "../../finetuned_models/"
 
 
-machine_types: ["fan","pump","ToyCar"]
+machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
 
 AST_model:
-  nb_layers: 3
+  nb_layers: 6
   depth_trainable: 3
   input_tdim: 1024
   num_mel_bins: 128

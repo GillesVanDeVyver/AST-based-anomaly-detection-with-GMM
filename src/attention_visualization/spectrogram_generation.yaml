@@ -1,0 +1,11 @@
+n_mels: 128
+n_frames: 64
+n_hop_frames: 8
+n_fft: 1024
+hop_length: 512
+power: 2.0
+
+dev_data_location: '../../../data/dev_data/'
+spectrogram_as_png_location: './spectrograms_as_png/'
+
+machine_types: ["gearbox","valve","slider","ToyTrain","fan","pump","ToyCar"]
